@@ -3,6 +3,7 @@ package com.mrbot.activiti;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -32,20 +33,18 @@ public class RESTUtil {
 		conn.setRequestMethod("POST");
 
 		// send data 方法1
-		/*
-		 * byte[] outputBytes = data.getBytes("UTF-8"); OutputStream os =
-		 * conn.getOutputStream(); os.write(outputBytes); os.close();
-		 */
+		byte[] outputBytes = data.getBytes("UTF-8");//关键，设置字符编码，否则服务端收到乱码
+		OutputStream os = conn.getOutputStream();
+		os.write(outputBytes);
+		os.close();
 
 		// send data 方法2
-		final OutputStreamWriter osw = new OutputStreamWriter(
-				conn.getOutputStream());
-		osw.write(data);
-		osw.close();
+//		final OutputStreamWriter osw = new OutputStreamWriter(	conn.getOutputStream(), "UTF-8") ; //关键，设置字符编码，否则服务端收到乱码
+//		osw.write(data);
+//		osw.close();
 
 		// receive data
-		BufferedReader bReader = new BufferedReader(new InputStreamReader(
-				conn.getInputStream()));
+		BufferedReader bReader = new BufferedReader(new InputStreamReader( conn.getInputStream()));
 		String line, resultStr = "";
 		while (null != (line = bReader.readLine())) {
 			resultStr += line;
@@ -66,8 +65,7 @@ public class RESTUtil {
 		conn.setRequestProperty("Authorization", "Basic " + token);
 		conn.setRequestMethod("DELETE"); // type: POST, PUT, DELETE, GET
 		// 若response code 返回204， 表示删除成功：则响应执行成功，但没有数据返回
-		return String.format("%s %s", conn.getResponseCode(),
-				conn.getResponseMessage());
+		return String.format("%s %s", conn.getResponseCode(), conn.getResponseMessage());
 	}
 
 	/*
@@ -75,7 +73,10 @@ public class RESTUtil {
 	 */
 	@SuppressWarnings("deprecation")
 	public String post2(String url, String json, String token) {
-
+		System.out
+		.println(String
+				.format("curl -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'",
+						token, url, json));
 		try {
 			DefaultHttpClient httpClient = new DefaultHttpClient();
 			// POST
@@ -83,18 +84,17 @@ public class RESTUtil {
 			// Header
 			postRequest.addHeader("Authorization", "Basic " + token);
 			// post data
-			StringEntity input = new StringEntity(json);
+			StringEntity input = new StringEntity(json, "UTF-8");//关键，设置字符编码，否则服务端收到乱码
 			input.setContentType("application/json");
 			postRequest.setEntity(input);
 
 			// send post
 			HttpResponse response = httpClient.execute(postRequest);
-			if (response.getStatusLine().getStatusCode() != 201) {
+			if (response.getStatusLine().getStatusCode() != 201 && response.getStatusLine().getStatusCode() != 200) {
 				throw new RuntimeException("Failed : HTTP error code : "
 						+ response.getStatusLine().getStatusCode());
 			}
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					(response.getEntity().getContent())));
+			BufferedReader br = new BufferedReader(new InputStreamReader((response.getEntity().getContent()),"UTF-8"));
 			String output;
 			System.out.println("Output from Server .... \n");
 			StringBuilder sb = new StringBuilder();

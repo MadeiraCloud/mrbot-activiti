@@ -1,0 +1,21 @@
+{
+  "open_id": "oKqDPsw0ZJDDI37fqoQq7wWYnJj0",
+  "content": {
+    "first": {
+      "value": "测试数据",
+      "color": "#ccc"
+    },
+    "keyword1": {
+      "value": "这是一个测试",
+      "color": "#0f0"
+    },
+    "keyword2": {
+      "value": "今天",
+      "color": "#00f"
+    },
+    "remark": {
+      "value": "描述完毕",
+      "color": "#000"
+    }
+  }
+}
