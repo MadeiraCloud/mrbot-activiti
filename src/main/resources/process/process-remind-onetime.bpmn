@@ -5,25 +5,27 @@
     <endEvent id="endevent1" name="结束"></endEvent>
     <startEvent id="startevent1" name="开始">
       <extensionElements>
-        <activiti:formProperty id="startTime" name="startTime" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="endTime" name="endTime" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="senderUid" name="senderUid" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="senderName" name="senderName" type="string"></activiti:formProperty>
-        <activiti:formProperty id="receiverUid" name="receiverUid" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="receiverName" name="receiverName" type="string"></activiti:formProperty>
-        <activiti:formProperty id="content" name="content" type="string"></activiti:formProperty>
+        <activiti:formProperty id="start_time" name="start_time" type="string" required="true"></activiti:formProperty>
+        <activiti:formProperty id="end_time" name="end_time" type="string" required="true"></activiti:formProperty>
+        <activiti:formProperty id="sender_uid" name="sender_uid" type="string" required="true"></activiti:formProperty>
+        <activiti:formProperty id="sender_name" name="sender_name" type="string"></activiti:formProperty>
+        <activiti:formProperty id="receiver_uid" name="receiver_uid" type="string" required="true"></activiti:formProperty>
+        <activiti:formProperty id="receiver_name" name="receiver_name" type="string"></activiti:formProperty>
+        <activiti:formProperty id="url" name="url" type="string"></activiti:formProperty>
+        <activiti:formProperty id="token" name="token" type="string"></activiti:formProperty>
+        <activiti:formProperty id="message" name="message" type="string"></activiti:formProperty>
       </extensionElements>
     </startEvent>
     <userTask id="usertask-wait-confirm" name="等待任务确认"></userTask>
     <sequenceFlow id="flow5" sourceRef="startevent1" targetRef="usertask-wait-remind"></sequenceFlow>
     <boundaryEvent id="boundarytimer1" name="Timer" attachedToRef="usertask-wait-remind" cancelActivity="true">
       <timerEventDefinition>
-        <timeDate>${startTime}</timeDate>
+        <timeDate>${start_time}</timeDate>
       </timerEventDefinition>
     </boundaryEvent>
     <boundaryEvent id="boundarytimer2" name="Timer" attachedToRef="usertask-wait-confirm" cancelActivity="true">
       <timerEventDefinition>
-        <timeDate>${endTime}</timeDate>
+        <timeDate>${end_time}</timeDate>
       </timerEventDefinition>
     </boundaryEvent>
     <serviceTask id="servicetask-confirm" name="微信确认" activiti:class="com.mrbot.activiti.WeChatDelegate"></serviceTask>

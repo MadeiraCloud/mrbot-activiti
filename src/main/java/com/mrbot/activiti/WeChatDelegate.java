@@ -2,6 +2,7 @@ package com.mrbot.activiti;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,71 +24,68 @@ public class WeChatDelegate implements JavaDelegate {
 
 		String activityId = execution.getCurrentActivityId();
 		String activityName = execution.getCurrentActivityName();
-		/*
-		 * log.info(String.format(
-		 * "Executing Java Service - WeChatDelegate(): execution id: %s, activityId: %s, activityName: %s "
-		 * , execution.getId(), activityId, activityName ));
-		 */
+
+		log.info(String.format("WeChatDelegate() 定时任务开始执行: execution id: %s, activityId: %s, activityName: %s "
+				, execution.getId(), activityId, activityName ));
+
 		// current time
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
 		Calendar now = Calendar.getInstance();
-		if (activityId.equals("servicetask-remind")) {
-			log.info(String
-					.format("----------------------------\n%s(%s)\n----------------------------",
-							activityId, activityName));
+		String[] allow_list = {"servicetask-remind","servicetask-confirm"};
+		if ( Arrays.asList(allow_list).contains(activityId) ){
+			try{
+				log.info(String.format("\n----------------------------\n%s(%s)\n----------------------------",
+					activityId, activityName));
 
-			// 获取map方法1
-			Map<String, Object> map = null;
-			map = new HashMap<String, Object>();
-			map.put("content", execution.getVariable("content"));
-			map.put("endTime", execution.getVariable("endTime"));
-			map.put("receiverName", execution.getVariable("receiverName"));
-			map.put("receiverUid", execution.getVariable("receiverUid"));
-			map.put("senderName", execution.getVariable("senderName"));
-			map.put("senderUid", execution.getVariable("senderUid"));
-			map.put("startTime", execution.getVariable("startTime"));
+				// 直接获取和输出所有变量
+				log.info(String.format("\n当前时间: %s\n收到数据: %s", df.format(now.getTime()), execution.getVariables()));
 
-			// 获取map方法2
-			map = execution.getVariables();
+				//解析输入数据
+//				String start_time = execution.getVariable("start_time").toString();
+//				String end_time = execution.getVariable("end_time").toString();
+//				String sender_uid = execution.getVariable("sender_uid").toString();
+//				String sender_name = execution.getVariable("sender_name").toString();
+//				String receiver_uid = execution.getVariable("receiver_uid").toString();
+//				String receiver_name = execution.getVariable("receiver_name").toString();
+				String url = execution.getVariable("url").toString();
+				String token = execution.getVariable("token").toString();		//base64 encoded
+				String open_id = execution.getVariable("open_id").toString(); 	//open_id in WeChat
+				String content = execution.getVariable("content").toString();
 
-			// map转json string
-			ObjectMapper mapper = new ObjectMapper();
-			String json = mapper.writeValueAsString(map);
+				//生成待post的数据
+				ObjectMapper mapper = new ObjectMapper();
+				Map<String, Object> map = null;
+				map = new HashMap<String, Object>();
+				map.put("open_id", open_id);
+				map.put("content", execution.getVariable("content"));
 
-			// output currentTime and json string
-			log.info(String.format("currentTime: %s\njson: %s",
-					df.format(now.getTime()), json));
+				//添加type参数到待post的数据中
+				if (activityId.equals("servicetask-remind")) {	
+					map.put("type","remind");
+				} else if (activityId.equals("servicetask-confirm")) {
+					map.put("type","confirm");
+				}
 
-			// 调用微信api
-			// 方法1
-			/*
-			 * Client client = ClientBuilder.newClient(); WebTarget target =
-			 * client.target("http://wxbot.jiecao.pw").path("notify");
-			 * Invocation.Builder invocationBuilder =
-			 * target.request(MediaType.APPLICATION_JSON); Response response =
-			 * invocationBuilder.header("Authorization",
-			 * String.format("Basic %s",token_b64)).post();
-			 */
-			try {
-				RESTUtil restUtil = new RESTUtil();
-				String url = "http://wxbot.jiecao.pw/notify";
-				String data = "{'open_id':'okqdpsw0zjddi37fqoqq7wwynjj0','url':'custom_url','content':{'data':''}}";
-				String token = "Ig8dian2lI9griRd3I6eM7Pet1yaRc6e4tWo2harb1Ov2Nich9";
-				String token_b64 = Base64.encodeBase64String(token.getBytes());
-				String result = restUtil.post(url, data, token_b64);
-			} catch (Exception e) {
-				System.out.print(e.getMessage());
+				// map转json string
+				String data = mapper.writeValueAsString(map);
+				log.info(String.format("待post到微信的数据: %s", df.format(now.getTime()), data));
+
+				// 调用微信api
+				try {
+					RESTUtil restUtil = new RESTUtil();
+					String result = restUtil.post(url, data, token);
+					log.info("调用微信api成功: "+result);
+				} catch (Exception e) {
+					log.info("调用微信api异常: "+e.getMessage());
+				}
 			}
-		} else if (activityId.equals("servicetask-confirm")) {
+			catch(Exception e){
+				log.info(String.format("处理 %s 时出错: %s\n输入数据: %s",e.getLocalizedMessage(),execution.getVariables()));
+			}
+		}
+		else{
 			log.info(String
-					.format("----------------------------\n%s(%s)\n----------------------------",
-							activityId, activityName));
-			// 直接获取和输出所有变量
-			log.info(String.format("currentTime: %s\nvariables=: %s",
-					df.format(now.getTime()), execution.getVariables()));
-		} else {
-			log.info(String
-					.format("----------------------------\n未知activity： %s(%s)\n----------------------------",
+					.format("\n----------------------------\n未知activity： %s(%s)\n----------------------------",
 							activityId, activityName));
 		}
 	}
