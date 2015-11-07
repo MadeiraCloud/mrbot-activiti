@@ -9,11 +9,12 @@
         <activiti:formProperty id="end_time" name="end_time" type="string" required="true"></activiti:formProperty>
         <activiti:formProperty id="sender_uid" name="sender_uid" type="string" required="true"></activiti:formProperty>
         <activiti:formProperty id="sender_name" name="sender_name" type="string"></activiti:formProperty>
-        <activiti:formProperty id="receiver_uid" name="receiver_uid" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="receiver_name" name="receiver_name" type="string"></activiti:formProperty>
         <activiti:formProperty id="url" name="url" type="string"></activiti:formProperty>
         <activiti:formProperty id="token" name="token" type="string"></activiti:formProperty>
-        <activiti:formProperty id="message" name="message" type="string"></activiti:formProperty>
+        <activiti:formProperty id="receiver_detail" name="receiver_detail" type="string"></activiti:formProperty>
+        <activiti:formProperty id="receiver_name_list" name="receiver_name_list" type="string"></activiti:formProperty>
+        <activiti:formProperty id="content" name="content" type="string"></activiti:formProperty>
+        <activiti:formProperty id="content_json" name="content_json" type="string"></activiti:formProperty>
       </extensionElements>
     </startEvent>
     <userTask id="usertask-wait-confirm" name="等待任务确认"></userTask>
