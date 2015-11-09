@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
-  <process id="process-remind-onetime" name="一次性提醒" isExecutable="true">
+  <process id="process-remind-onetime-v2" name="一次性提醒v2" isExecutable="true">
     <userTask id="usertask-wait-remind" name="等待任务提醒"></userTask>
     <endEvent id="endevent1" name="结束"></endEvent>
     <startEvent id="startevent1" name="开始">
@@ -9,56 +9,45 @@
         <activiti:formProperty id="end_time" name="end_time" type="string" required="true"></activiti:formProperty>
         <activiti:formProperty id="sender_uid" name="sender_uid" type="string" required="true"></activiti:formProperty>
         <activiti:formProperty id="sender_name" name="sender_name" type="string"></activiti:formProperty>
-        <activiti:formProperty id="url" name="url" type="string"></activiti:formProperty>
-        <activiti:formProperty id="token" name="token" type="string"></activiti:formProperty>
+        <activiti:formProperty id="wechat_api" name="wechat_api" type="string"></activiti:formProperty>
+        <activiti:formProperty id="wechat_token" name="wechat_token" type="string"></activiti:formProperty>
         <activiti:formProperty id="receiver_detail" name="receiver_detail" type="string"></activiti:formProperty>
         <activiti:formProperty id="receiver_name_list" name="receiver_name_list" type="string"></activiti:formProperty>
         <activiti:formProperty id="content" name="content" type="string"></activiti:formProperty>
         <activiti:formProperty id="content_json" name="content_json" type="string"></activiti:formProperty>
         <activiti:formProperty id="receiver_detail_json" name="receiver_detail_json" type="string"></activiti:formProperty>
+        <activiti:formProperty id="appservice_api" name="appservice_api" type="string"></activiti:formProperty>
+        <activiti:formProperty id="appservice_token" name="appservice_token" type="string"></activiti:formProperty>
       </extensionElements>
     </startEvent>
-    <userTask id="usertask-wait-confirm" name="等待任务确认"></userTask>
     <sequenceFlow id="flow5" sourceRef="startevent1" targetRef="usertask-wait-remind"></sequenceFlow>
     <boundaryEvent id="boundarytimer1" name="Timer" attachedToRef="usertask-wait-remind" cancelActivity="true">
-      <timerEventDefinition>
-        <timeDate>${start_time}</timeDate>
-      </timerEventDefinition>
-    </boundaryEvent>
-    <boundaryEvent id="boundarytimer2" name="Timer" attachedToRef="usertask-wait-confirm" cancelActivity="true">
       <timerEventDefinition>
         <timeDate>${end_time}</timeDate>
       </timerEventDefinition>
     </boundaryEvent>
-    <serviceTask id="servicetask-confirm" name="微信确认" activiti:class="com.mrbot.activiti.WeChatDelegate"></serviceTask>
-    <sequenceFlow id="flow8" sourceRef="servicetask-confirm" targetRef="endevent1"></sequenceFlow>
+    <serviceTask id="servicetask-finish" name="结束提醒事务" activiti:class="com.mrbot.activiti.AppServiceDelegate"></serviceTask>
+    <sequenceFlow id="flow8" sourceRef="servicetask-finish" targetRef="endevent1"></sequenceFlow>
     <serviceTask id="servicetask-remind" name="微信提醒" activiti:class="com.mrbot.activiti.WeChatDelegate"></serviceTask>
-    <sequenceFlow id="sid-2D5E2AD6-C3E2-4E34-979A-AA2D53F794C3" sourceRef="servicetask-remind" targetRef="usertask-wait-confirm"></sequenceFlow>
     <sequenceFlow id="flow6" sourceRef="boundarytimer1" targetRef="servicetask-remind"></sequenceFlow>
-    <sequenceFlow id="flow7" sourceRef="boundarytimer2" targetRef="servicetask-confirm"></sequenceFlow>
+    <sequenceFlow id="sid-2D5E2AD6-C3E2-4E34-979A-AA2D53F794C3" sourceRef="servicetask-remind" targetRef="servicetask-finish"></sequenceFlow>
   </process>
-  <bpmndi:BPMNDiagram id="BPMNDiagram_process-remind-onetime">
-    <bpmndi:BPMNPlane bpmnElement="process-remind-onetime" id="BPMNPlane_process-remind-onetime">
+  <bpmndi:BPMNDiagram id="BPMNDiagram_process-remind-onetime-v2">
+    <bpmndi:BPMNPlane bpmnElement="process-remind-onetime-v2" id="BPMNPlane_process-remind-onetime-v2">
       <bpmndi:BPMNShape bpmnElement="usertask-wait-remind" id="BPMNShape_usertask-wait-remind">
         <omgdc:Bounds height="55.0" width="108.0" x="105.0" y="65.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
-        <omgdc:Bounds height="28.0" width="28.0" x="750.0" y="78.5"></omgdc:Bounds>
+        <omgdc:Bounds height="28.0" width="28.0" x="585.0" y="78.5"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
         <omgdc:Bounds height="30.0" width="30.0" x="15.0" y="77.5"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="usertask-wait-confirm" id="BPMNShape_usertask-wait-confirm">
-        <omgdc:Bounds height="55.0" width="108.0" x="420.0" y="65.0"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="boundarytimer1" id="BPMNShape_boundarytimer1">
         <omgdc:Bounds height="31.0" width="31.0" x="183.18129818502848" y="49.32751573938803"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="boundarytimer2" id="BPMNShape_boundarytimer2">
-        <omgdc:Bounds height="31.0" width="31.0" x="499.2108364523018" y="49.33750856446157"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="servicetask-confirm" id="BPMNShape_servicetask-confirm">
-        <omgdc:Bounds height="55.0" width="105.0" x="585.0" y="65.0"></omgdc:Bounds>
+      <bpmndi:BPMNShape bpmnElement="servicetask-finish" id="BPMNShape_servicetask-finish">
+        <omgdc:Bounds height="55.0" width="105.0" x="420.0" y="65.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="servicetask-remind" id="BPMNShape_servicetask-remind">
         <omgdc:Bounds height="55.0" width="105.0" x="255.0" y="65.0"></omgdc:Bounds>
@@ -71,17 +60,13 @@
         <omgdi:waypoint x="360.0" y="92.5"></omgdi:waypoint>
         <omgdi:waypoint x="420.0" y="92.5"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
-        <omgdi:waypoint x="529.161086597769" y="70.44467101381369"></omgdi:waypoint>
-        <omgdi:waypoint x="585.0" y="92.11196779343568"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
         <omgdi:waypoint x="212.63971632171348" y="71.56640015162301"></omgdi:waypoint>
         <omgdi:waypoint x="255.0" y="92.01721718419337"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
-        <omgdi:waypoint x="690.0" y="92.5"></omgdi:waypoint>
-        <omgdi:waypoint x="750.0" y="92.5"></omgdi:waypoint>
+        <omgdi:waypoint x="525.0" y="92.5"></omgdi:waypoint>
+        <omgdi:waypoint x="585.0" y="92.5"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
