@@ -10,13 +10,15 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.activiti.engine.delegate.JavaDelegate;
+
 import org.activiti.engine.delegate.DelegateExecution;
+import org.activiti.engine.delegate.JavaDelegate;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class WeChatDelegate implements JavaDelegate {
+public class AppServiceDelegate implements JavaDelegate {
 
-	private final Logger log = Logger.getLogger(WeChatDelegate.class.getName());
+	private final Logger log = Logger.getLogger(AppServiceDelegate.class.getName());
 
 	@Override
 	public void execute(DelegateExecution execution) throws Exception {
@@ -25,13 +27,13 @@ public class WeChatDelegate implements JavaDelegate {
 		String activityId = execution.getCurrentActivityId();
 		String activityName = execution.getCurrentActivityName();
 
-		log.info(String.format("WeChatDelegate() 定时任务开始执行: execution id: %s, activityId: %s, activityName: %s "
+		log.info(String.format("AppServiceDelegate() 定时任务开始执行: execution id: %s, activityId: %s, activityName: %s "
 				, execution.getId(), activityId, activityName ));
 
 		// current time
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
 		Calendar now = Calendar.getInstance();
-		String[] allow_list = {"servicetask-remind","servicetask-confirm"};
+		String[] allow_list = {"servicetask-finish"};
 		if ( Arrays.asList(allow_list).contains(activityId) ){
 			try{
 				log.info(String.format("\n----------------------------\n%s(%s)\n----------------------------",
@@ -57,53 +59,46 @@ public class WeChatDelegate implements JavaDelegate {
 				String end_time = execution.getVariable("end_time").toString();
 				@SuppressWarnings("unused")
 				String receiver_name_list = execution.getVariable("receiver_name_list").toString();
-				@SuppressWarnings("unused")
 				String sender_name = execution.getVariable("sender_name").toString();
 				@SuppressWarnings("unused")
 				String sender_uid = execution.getVariable("sender_uid").toString();
-				String wechat_token = execution.getVariable("wechat_token").toString();
-				String wechat_api = execution.getVariable("wechat_api").toString();
+				String appservice_token = execution.getVariable("appservice_token").toString();
+				String appservice_api = execution.getVariable("appservice_api").toString();
 				@SuppressWarnings("rawtypes")
 				ArrayList receiver_detail = (ArrayList)execution.getVariable("receiver_detail");
-				@SuppressWarnings({ "unchecked" })
+				@SuppressWarnings({ "unchecked", "unused" })
 				LinkedHashMap<String, Object> content = (LinkedHashMap<String, Object>)execution.getVariable("content");
 				
 				@SuppressWarnings("rawtypes")
 				Iterator receiver_list = receiver_detail.iterator();
 				int total_to_send = receiver_detail.size();
 				int index = 0;
-				while(receiver_list.hasNext()){
-					index++;
-					//准备参数
-					@SuppressWarnings("unchecked")
-					Map<String, Object> receiver = (Map<String, Object>)receiver_list.next();
-					String alias = receiver.get("alias").toString();
-					String uid = receiver.get("uid").toString();
-					String open_id = receiver.get("open_id").toString();
-					log.info("[Receiver] alias: "+alias+", uid: "+ uid+", open_id: "+ open_id);
-				
-					//生成待post的数据
-					ObjectMapper mapper = new ObjectMapper();
-					Map<String, Object> post_map = null;
-					post_map = new HashMap<String, Object>();
-					post_map.put("open_id", open_id);
-					post_map.put("content", content);	
-					post_map.put("type",activityId);
+			 
+				index++;
+				//准备参数
+				@SuppressWarnings("unchecked")
+				String process_instance_id = execution.getProcessInstanceId();
+				String tran_id = execution.getVariable("tran_id").toString();
+				log.info("process_instance_id: "+ process_instance_id+", tran_id: "+ tran_id);
 
-					// map转json string
-					String data = mapper.writeValueAsString(post_map);
-					log.info(String.format("服务端时间：%s,\n待post到微信的数据: %s",df.format(now.getTime()), data));
+				//生成待post的数据
+				ObjectMapper mapper = new ObjectMapper();
+				Map<String, Object> post_map = null;
+				post_map = new HashMap<String, Object>();
+				post_map.put("state","done");
 
-					// 调用微信api
-					try {
-						RESTUtil restUtil = new RESTUtil();
-						String result = restUtil.post(wechat_api, data, wechat_token);
-						log.info("("+index+"/"+total_to_send+")[调用微信api成功]("+sender_name+"->"+alias+"): "+result);
-					} catch (Exception e) {
-						log.info("("+index+"/"+total_to_send+")[调用微信api异常]("+sender_name+"->"+alias+"): "+e.getMessage());
-						continue;
-					}
-				}
+				// map转json string
+				String data = mapper.writeValueAsString(post_map);
+				log.info(String.format("服务端时间：%s,\n待post到AppService的数据: %s",df.format(now.getTime()), data));
+
+				// 调用AppService api
+				try {
+					RESTUtil restUtil = new RESTUtil();
+					String result = restUtil.put(appservice_api+"/"+process_instance_id+'/'+tran_id, data, appservice_token);
+					log.info("("+index+"/"+total_to_send+")[调用AppService api成功]("+process_instance_id+","+tran_id+"): "+result);
+				} catch (Exception e) {
+					log.info("("+index+"/"+total_to_send+")[调用AppService api异常]("+process_instance_id+","+tran_id+"): "+e.getMessage());
+				}				 
 			}
 			catch(Exception e){
 				log.info(String.format("处理 %s 时出错: %s\n输入数据: %s",e.getLocalizedMessage(),execution.getVariables()));
@@ -115,4 +110,5 @@ public class WeChatDelegate implements JavaDelegate {
 							activityId, activityName));
 		}
 	}
+
 }
