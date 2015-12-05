@@ -152,6 +152,7 @@ public class WeChatDelegate implements JavaDelegate {
 		        String url = appservice_api_root + "/activiti/transaction/" + tran_id;
 		        System.out.println("url:"+url);
 		        Map<String, Object> state_map = null;
+		        Map<String, Object> valid_map = null;
 		        try {
 					RESTUtil restUtil = new RESTUtil();
 					String result_str = restUtil.get(url, appservice_token);
@@ -160,8 +161,12 @@ public class WeChatDelegate implements JavaDelegate {
 					HashMap<String,Object> result = new ObjectMapper().readValue(result_str, HashMap.class);
 					//System.out.println( ":) testGetTransaction() result(json to map):\n"+ result );
 					state_map = (Map<String, Object>)result.get("receiver_state");
+					valid_map = (Map<String, Object>)result.get("valid_user");
 					for (String key : state_map.keySet()) {
-						System.out.println( key +":"+ state_map.get(key) );
+						if (valid_map.get(key)==null){
+							valid_map.put(key, "");
+						}
+						System.out.println( key +"=> "+ state_map.get(key) + ", "+ valid_map.get(key) );
 					}
 				} catch (Exception e) {
 					System.out.println("[µ˜”√AppService api“Ï≥£](" + "," + tran_id + "): " + e.getMessage());
@@ -182,11 +187,13 @@ public class WeChatDelegate implements JavaDelegate {
 					String open_id = receiver.get("open_id").toString();
 					String receiver_state = state_map.get(open_id).toString();
 					
-					if (receiver_state.equals("enabled")){
-						write_log("[send][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receiver_state:" + receiver_state);
+					String valid_user = valid_map.get(open_id).toString();
+					
+					if (receiver_state.equals("enabled") && valid_user.equals("Enabled")){
+						write_log("[send][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receiver_state:" + receiver_state + ", valid_user:" + valid_user);
 					}
 					else{
-						write_log("[skip][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receiver_state:" + receiver_state);
+						write_log("[skip][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receiver_state:" + receiver_state + ", valid_user:" + valid_user);
 						continue;						
 					}
 					index_send++;
