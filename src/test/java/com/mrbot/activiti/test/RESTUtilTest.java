@@ -1,7 +1,5 @@
 package com.mrbot.activiti.test;
 
-import static org.junit.Assert.*;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -206,6 +204,50 @@ public class RESTUtilTest {
 			System.out.println(":( call REST api error\n"
 					+ e.getLocalizedMessage());
 		}
+	}
+
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testGetTransaction() {
+	 
+		System.out.println("获取有效接收者列表");
+		String appservice_api = "http://192.168.1.119:88/activiti/process_instances";
+		String token = "8db63ff86d406d93904070561e3b9212e241fc14";
+		String appservice_token = Base64.encodeBase64String(token.getBytes());
+		String tran_id = "c840c176-4b9a-4639-9878-e44ae9279246";
+		
+		String[] _ary = appservice_api.split("//");
+        String appservice_api_root = _ary[0]+"//"+_ary[1].split("/")[0];
+        String url = appservice_api_root + "/activiti/transaction/" + tran_id;
+        System.out.println("url:"+url);
+        
+		// 调用AppService api
+
+		// 方法1： 使用HttpURLConnection
+        try {
+			RESTUtil restUtil = new RESTUtil();
+			String result_str = restUtil.get(url, appservice_token);
+			System.out.println("[调用AppService api成功](" + "," + tran_id + "): " + result_str);
+			
+			//json string to map
+			HashMap<String,Object> result = new ObjectMapper().readValue(result_str, HashMap.class);
+			System.out.println( ":) testGetTransaction() result(json to map):\n"+ result );
+			Map<String, Object> map = (Map<String, Object>)result.get("receiver_state");
+			for (String key : map.keySet()) {
+				System.out.println( key +":"+ map.get(key) );
+			}
+			System.out.println("oKqDPs_s9jSI8YwXxKEgUfge2SlQ=>" + map.get("oKqDPs_s9jSI8YwXxKEgUfge2SlQ"));
+		} catch (Exception e) {
+			System.out.println("[调用AppService api异常](" + "," + tran_id + "): " + e.getMessage());
+		}
+
+		
+		// 方法2： 使用HTTPClient
+		//			System.out
+		//					.println(":) testNotify() with DefaultHttpClient. result:\n"
+		//							+ util.get2(url, json, token_b64));
+	 
 	}
 
 

@@ -18,11 +18,47 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 public class RESTUtil {
 
+	String _splitter="----------------------------------------------------------------------------------------------------------------";
+	
+	public String get(String url, String token) throws Exception {
+		System.out
+				.println(String
+						.format("%s\ncurl -X GET -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s \n%s",
+								_splitter,token, url, _splitter));
+
+		URL restURL = new URL(url);
+        // 根据拼凑的URL，打开连接，URL.openConnection函数会根据 URL的类型，    
+        // 返回不同的URLConnection子类的对象，这里URL是一个http，因此实际返回的是HttpURLConnection    
+		HttpURLConnection conn = (HttpURLConnection) restURL.openConnection();
+//		conn.setDoOutput(true);
+//		conn.setAllowUserInteraction(false);
+		conn.setRequestProperty("Content-Type", "application/json");
+		conn.setRequestProperty("Authorization", "Basic " + token);
+		conn.setRequestMethod("GET");
+
+  
+        // 进行连接，但是实际上get request要在下一句的 connection.getInputStream()函数中才会真正发到    
+        // 服务器    
+        conn.connect();    
+        // 取得输入流，并使用Reader读取    
+        BufferedReader reader = new BufferedReader(new InputStreamReader(    
+                conn.getInputStream()));       
+        String lines;
+        String resultStr="";
+        while ((lines = reader.readLine()) != null) {    
+        	resultStr += lines;    
+        }    
+        reader.close();    
+        // 断开连接    
+        conn.disconnect(); 
+		return resultStr;
+	}
+	
 	public String post(String url, String data, String token) throws Exception {
 		System.out
 				.println(String
-						.format("curl -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'",
-								token, url, data));
+						.format("%s\ncurl -X POST -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'\n%s",
+								_splitter,token, url, data,_splitter));
 
 		URL restURL = new URL(url);
 		HttpURLConnection conn = (HttpURLConnection) restURL.openConnection();
@@ -58,8 +94,8 @@ public class RESTUtil {
 	public String put(String url, String data, String token) throws Exception {
 		System.out
 				.println(String
-						.format("curl -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'",
-								token, url, data));
+						.format("%s\ncurl -X PUT -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'\n%s",
+								_splitter,token, url, data,_splitter));
 
 		URL restURL = new URL(url);
 		HttpURLConnection conn = (HttpURLConnection) restURL.openConnection();
@@ -95,8 +131,8 @@ public class RESTUtil {
 	public String delete(String url, String token) throws Exception {
 		System.out
 				.println(String
-						.format("curl -X DELETE -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s",
-								token, url));
+						.format("%s\ncurl -X DELETE -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s\n%s",
+								_splitter,token, url,_splitter));
 		URL restURL = new URL(url);
 		HttpURLConnection conn = (HttpURLConnection) restURL.openConnection();
 		conn.setDoOutput(true);
@@ -114,8 +150,8 @@ public class RESTUtil {
 	public String post2(String url, String json, String token) {
 		System.out
 		.println(String
-				.format("curl -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'",
-						token, url, json));
+				.format("%s\ncurl -X POST -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'\n%s",
+						_splitter,token, url, json,_splitter));
 		try {
 			DefaultHttpClient httpClient = new DefaultHttpClient();
 			// POST
@@ -160,8 +196,8 @@ public class RESTUtil {
 	public String put2(String url, String json, String token) {
 		System.out
 		.println(String
-				.format("curl -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'",
-						token, url, json));
+				.format("%s\ncurl -X PUT -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s -d '%s'\n%s",
+						_splitter,token, url, json,_splitter));
 		try {
 			DefaultHttpClient httpClient = new DefaultHttpClient();
 			// POST
@@ -200,7 +236,10 @@ public class RESTUtil {
 	
 	@SuppressWarnings("deprecation")
 	public String delete2(String url, String token) {
-
+		System.out
+		.println(String
+				.format("%s\ncurl -X DELETE -H 'Authorization:Basic %s' -H 'Content-Type: application/json' %s\n%s",
+						_splitter,token, url,_splitter));
 		try {
 			DefaultHttpClient httpClient = new DefaultHttpClient();
 			// delete
