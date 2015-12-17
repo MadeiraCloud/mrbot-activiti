@@ -48,6 +48,7 @@ public class WeChatDelegate implements JavaDelegate {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void execute(DelegateExecution execution) throws Exception {
 		// http://activiti.org/javadocs/org/activiti/engine/delegate/DelegateExecution.html
@@ -151,22 +152,23 @@ public class WeChatDelegate implements JavaDelegate {
 		        String appservice_api_root = _ary[0]+"//"+_ary[1].split("/")[0];
 		        String url = appservice_api_root + "/activiti/transaction/" + tran_id;
 		        System.out.println("url:"+url);
-		        Map<String, Object> state_map = null;
-		        Map<String, Object> valid_map = null;
+		        HashMap<String,Object> user_map = null;
 		        try {
 					RESTUtil restUtil = new RESTUtil();
 					String result_str = restUtil.get(url, appservice_token);
 					//System.out.println("[调用AppService api成功](" + "," + tran_id + "): " + result_str);
 					//json string to map
-					HashMap<String,Object> result = new ObjectMapper().readValue(result_str, HashMap.class);
-					//System.out.println( ":) testGetTransaction() result(json to map):\n"+ result );
-					state_map = (Map<String, Object>)result.get("receiver_state");
-					valid_map = (Map<String, Object>)result.get("valid_user");
-					for (String key : state_map.keySet()) {
-						if (valid_map.get(key)==null){
-							valid_map.put(key, "");
-						}
-						System.out.println( key +"=> "+ state_map.get(key) + ", "+ valid_map.get(key) );
+					user_map = new ObjectMapper().readValue(result_str, HashMap.class);
+					System.out.println( ":) testGetTransaction() result(json to map):\n"+ user_map );
+					System.out.println("user state:");
+					for (String key : user_map.keySet()) {
+						@SuppressWarnings("unchecked")
+						HashMap<String,Object> _map = (HashMap<String, Object>) user_map.get(key);
+						System.out.println( key +"=> "
+								+ _map.get("is_valid_user").toString() + ", "
+								+ _map.get("receive_enabled").toString() + ", " 
+								+ _map.get("is_friend").toString()
+						);
 					}
 				} catch (Exception e) {
 					System.out.println("[调用AppService api异常](" + "," + tran_id + "): " + e.getMessage());
@@ -176,66 +178,75 @@ public class WeChatDelegate implements JavaDelegate {
 				int total_to_send = receiver_detail.size();
 				int index = 0;
 				int index_send = 0;
+				ArrayList<Object> user_state_array = new ArrayList<Object>();
 				while (receiver_list.hasNext()) {
 					index++;
 					// 准备参数
 					@SuppressWarnings("unchecked")
-					Map<String, Object> receiver = (Map<String, Object>) receiver_list
-							.next();
+					Map<String, Object> receiver = (Map<String, Object>) receiver_list.next();
 					String alias = receiver.get("alias").toString();
 					String uid = receiver.get("uid").toString();
 					String open_id = receiver.get("open_id").toString();
-					String receiver_state = state_map.get(open_id).toString();
-					
-					String valid_user = valid_map.get(open_id).toString();
-					
-					if (receiver_state.equals("enabled") && valid_user.equals("Enabled")){
-						write_log("[send][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receiver_state:" + receiver_state + ", valid_user:" + valid_user);
+
+					//get user state
+					HashMap<String,Object> _map = (HashMap<String, Object>) user_map.get(open_id);
+					String receive_enabled = _map.get("receive_enabled").toString();
+					String is_valid_user = _map.get("is_valid_user").toString();
+					String is_friend = _map.get("is_friend").toString();
+
+					if (receive_enabled.equals("true") && is_valid_user.equals("true") && is_friend.equals("true")){
+						write_log("[send][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receive_enabled:" + receive_enabled + ", is_valid_user:" + is_valid_user + ", is_friend:" +is_friend);
+						index_send++;
+						// 生成待post的数据
+						@SuppressWarnings("unchecked")
+						Map<String, Object> keyword2 = (Map<String, Object>) content
+								.get("keyword2");
+						if (duetime_type.equals("end_time")){
+							keyword2.put("value", String.format("%s",
+									raw_duetime));
+						}
+						else{
+							keyword2.put("value", String.format("%s(%s,第%d次)",
+									raw_duetime, remind_time, remind_count));
+						}
+						Map<String, Object> post_map = null;
+						post_map = new HashMap<String, Object>();
+						post_map.put("content", content);
+						post_map.put("type", activityId);
+						post_map.put("open_id", open_id);
+	
+						// map转json string
+						ObjectMapper mapper = new ObjectMapper();
+						String data = mapper.writeValueAsString(post_map);
+						// write_log(String.format("待post到微信的数据: %s", data));
+	
+						// 调用微信api
+						try {
+							RESTUtil restUtil = new RESTUtil();
+							String result = restUtil.post(wechat_api, data,
+									wechat_token);
+							write_log("(" + index + "/" + total_to_send
+									+ ")[调用微信api成功](" + sender_name + "->" + alias
+									+ "): " + result);
+							_map.put("send_result", "succeed");
+						} catch (Exception e) {
+							write_log("(" + index + "/" + total_to_send
+									+ ")[调用微信api异常](" + sender_name + "->" + alias
+									+ "): " + e.getMessage());
+							_map.put("send_result", "failed");
+						}
 					}
 					else{
-						write_log("[skip][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receiver_state:" + receiver_state + ", valid_user:" + valid_user);
-						continue;						
+						write_log("[skip][Receiver] alias: " + alias + ", uid: " + uid + ", open_id: " + open_id + ", receive_enabled:" + receive_enabled + ", is_valid_user:" + is_valid_user + ", is_friend:" +is_friend);
+						_map.put("send_result", "skipped");
 					}
-					index_send++;
-					// 生成待post的数据
-					@SuppressWarnings("unchecked")
-					Map<String, Object> keyword2 = (Map<String, Object>) content
-							.get("keyword2");
-					if (duetime_type.equals("end_time")){
-						keyword2.put("value", String.format("%s",
-								raw_duetime));
-					}
-					else{
-						keyword2.put("value", String.format("%s(%s,第%d次)",
-								raw_duetime, remind_time, remind_count));
-					}
-					Map<String, Object> post_map = null;
-					post_map = new HashMap<String, Object>();
-					post_map.put("content", content);
-					post_map.put("type", activityId);
-					post_map.put("open_id", open_id);
-
-					// map转json string
-					ObjectMapper mapper = new ObjectMapper();
-					String data = mapper.writeValueAsString(post_map);
-					// write_log(String.format("待post到微信的数据: %s", data));
-
-					// 调用微信api
-					try {
-						RESTUtil restUtil = new RESTUtil();
-						String result = restUtil.post(wechat_api, data,
-								wechat_token);
-						write_log("(" + index + "/" + total_to_send
-								+ ")[调用微信api成功](" + sender_name + "->" + alias
-								+ "): " + result);
-					} catch (Exception e) {
-						write_log("(" + index + "/" + total_to_send
-								+ ")[调用微信api异常](" + sender_name + "->" + alias
-								+ "): " + e.getMessage());
-						continue;
-					}
+					_map.put("user_id", uid);
+					_map.put("alias", alias);
+					_map.put("open_id", open_id);
+					user_state_array.add(_map);
 				}
 				//提醒记录
+				execution.setVariable("user_state", user_state_array);
 				execution.setVariable("remind_time", remind_time);
 				execution.setVariable("remind_count", remind_count);
 				write_log(String.format(

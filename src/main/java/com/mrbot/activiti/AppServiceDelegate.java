@@ -132,6 +132,7 @@ public class AppServiceDelegate implements JavaDelegate {
 				Iterator receiver_list = receiver_detail.iterator();
 
 				if (activityId.equals("servicetask-finish")) {
+					//调用Api Service: /activiti/process_instance (PUT)
 					// 准备参数
 					String process_instance_id = execution
 							.getProcessInstanceId();
@@ -163,18 +164,52 @@ public class AppServiceDelegate implements JavaDelegate {
 								+ "," + tran_id + "): " + e.getMessage());
 					}
 				} else if (activityId.equals("servicetask-log")) {
-					/*
-					 * String remind_time =
-					 * df.format(Calendar.getInstance().getTime()); long
-					 * remind_count = (Long)
-					 * execution.getVariable("remind_count");
-					 * execution.setVariable("remind_time", remind_time);
-					 * execution.setVariable("remind_count", remind_count );
-					 */
+					@SuppressWarnings("unchecked")
+					ArrayList<Object>user_state_array = (ArrayList<Object>) execution.getVariable("user_state");
+					String remind_time = execution.getVariable("remind_time").toString();
+					String remind_count = execution.getVariable("remind_count").toString();
 					write_log(String.format(
-							"[remind_time]:%s [remind_count]:%s", execution
-									.getVariable("remind_time").toString(),
-							execution.getVariable("remind_count").toString()));
+							"[remind_time]:%s [remind_count]:%s [user_state]:%s", 
+							remind_time,remind_count,user_state_array
+						)
+					);
+					//调用Api Service: /activiti/transaction (PUT)
+					// 准备参数
+					String process_instance_id = execution
+							.getProcessInstanceId();
+					String tran_id = execution.getVariable("tran_id")
+							.toString();
+					write_log("process_instance_id: "
+							+ process_instance_id + ", tran_id: " + tran_id);
+
+					String[] _ary = appservice_api.split("//");
+			        String appservice_api_root = _ary[0]+"//"+_ary[1].split("/")[0];
+			        String url = appservice_api_root + "/activiti/transaction/";
+			        System.out.println("url:"+url);
+					
+					// 生成待post的数据
+					Map<String, Object> post_map = null;
+					post_map = new HashMap<String, Object>();
+					post_map.put("tran_id",tran_id);
+					post_map.put("remind_time",remind_time);
+					post_map.put("remind_count",remind_count);
+					post_map.put("user_state", user_state_array);
+
+					// map转json string
+					ObjectMapper mapper = new ObjectMapper();
+					String data = mapper.writeValueAsString(post_map);
+					write_log(String.format("待post到AppService的数据: %s", data));
+
+					// 调用AppService api
+					try {
+						RESTUtil restUtil = new RESTUtil();
+						String result = restUtil.put(url , data, appservice_token);
+						write_log("[调用AppService api成功](" + process_instance_id
+								+ "," + tran_id + "): " + result);
+					} catch (Exception e) {
+						write_log("[调用AppService api异常](" + process_instance_id
+								+ "," + tran_id + "): " + e.getMessage());
+					}
 				}
 			} catch (Exception e) {
 				write_log(String.format("处理 %s 时出错\n错误: %s\n输入数据: %s",
